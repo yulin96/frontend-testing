@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "skill_name": "frontend-testing",
+  "evaluation_method": "Each case is an independent scenario. Give the evaluated agent the prompt and seed files in an isolated workspace. Keep assertions for the evaluator; do not include them in the agent prompt. These cases are specifications, not an executable or already-passed evaluation suite.",
+  "evals": [
+    {
+      "id": "regression-keeps-real-failure",
+      "prompt": "用 $frontend-testing 给 readActivity 补回归测试。契约：查询参数只解码一次，activity=hello%252Fworld 应返回 hello%2Fworld；activity=100%25 应返回 100%。只写测试，不改实现，不运行 build 或浏览器。使用 Node 内置测试运行器。",
+      "seed_files": {
+        "query.mjs": "export function readActivity(search) { return decodeURIComponent(new URLSearchParams(search).get('activity') ?? '') }\n"
+      },
+      "assertions": [
+        "imports_real_readActivity",
+        "asserts_exact_once_decoded_values",
+        "runs_tests_and_reports_target_behavior_failures",
+        "does_not_modify_query_implementation",
+        "does_not_skip_mark_expected_failure_or_weaken_assertions"
+      ]
+    },
+    {
+      "id": "wrong-test-can-be-corrected-with-evidence",
+      "prompt": "用 $frontend-testing 修复这个测试。接口明确规定只解码一次；请根据契约判断改测试还是实现，不运行 build。使用 Node 内置测试运行器。",
+      "seed_files": {
+        "query.mjs": "export function readActivity(search) { return new URLSearchParams(search).get('activity') ?? '' }\n",
+        "query.test.mjs": "import test from 'node:test'\nimport assert from 'node:assert/strict'\nimport { readActivity } from './query.mjs'\ntest('decodes once', () => { assert.equal(readActivity('activity=hello%252Fworld'), 'hello/world') })\n"
+      },
+      "assertions": [
+        "explains_why_existing_expected_value_violates_contract",
+        "preserves_implementation",
+        "uses_exact_hello_percent_2Fworld_expectation",
+        "runs_test_without_suppressing_failures"
+      ]
+    },
+    {
+      "id": "ansi-normalization-preserves-business-text",
+      "prompt": "用 $frontend-testing 测试 uploadSummary：用户可见输出必须是 uploaded: a.js (12 B)，颜色可以变化。请保留文件名和字节数的精确检查，不改实现。使用 Node 内置测试运行器。",
+      "seed_files": {
+        "summary.mjs": "export function uploadSummary(color) { return color ? 'uploaded: \\u001b[32ma.js\\u001b[39m (12 B)' : 'uploaded: a.js (12 B)' }\n"
+      },
+      "assertions": [
+        "checks_colored_and_plain_output",
+        "normalizes_only_control_sequences",
+        "asserts_full_visible_business_text",
+        "does_not_change_production_output"
+      ]
+    },
+    {
+      "id": "tdd-with-authorized-fix",
+      "prompt": "用 $frontend-testing 按 TDD 修复 sum。契约：数值数组求和，空数组返回 0；当前空数组抛错。可以改实现，使用 Node 内置测试运行器，不执行 build。",
+      "seed_files": {
+        "sum.mjs": "export function sum(values) { return values.reduce((total, value) => total + value) }\n"
+      },
+      "assertions": [
+        "demonstrates_empty_array_regression_fails_before_fix",
+        "preserves_exact_zero_and_nonempty_sum_assertions",
+        "makes_minimal_authorized_implementation_fix",
+        "reruns_target_tests_after_fix",
+        "does_not_add_test_framework_or_unrelated_refactor"
+      ]
+    },
+    {
+      "id": "unawaited-rejection-is-not-coverage",
+      "prompt": "用 $frontend-testing 加强 reserveSeat 的测试。契约：满员时必须拒绝，错误 code 为 FULL，且不写入；允许替换 writer 边界但不能 mock reserveSeat。本次只改测试。使用 Node 内置测试运行器。",
+      "seed_files": {
+        "reserve.mjs": "export async function reserveSeat(full, writer) { if (full) throw Object.assign(new Error('No seats'), { code: 'FULL' }); await writer('reserved'); return { status: 'reserved' } }\n"
+      },
+      "assertions": [
+        "awaits_or_returns_rejection_assertion",
+        "asserts_FULL_code_and_zero_writes_on_failure",
+        "asserts_exact_success_result_and_one_expected_write",
+        "calls_real_reserveSeat",
+        "does_not_mock_internal_business_decision"
+      ]
+    },
+    {
+      "id": "no-tests-is-a-reported-gap",
+      "prompt": "用 $frontend-testing 为 normalize 写测试并验证。沿用现有命令，本次不安装依赖、不改业务实现、不运行 build 或浏览器。",
+      "seed_files": {
+        "package.json": "{\"private\":true,\"scripts\":{\"test\":\"node -e \\\"console.log('No tests executed')\\\"\"}}\n",
+        "normalize.mjs": "export function normalize(value) { return value.trim() }\n"
+      },
+      "assertions": [
+        "inspects_test_script_before_claiming_test_execution",
+        "does_not_treat_zero_exit_as_tests_passing",
+        "uses_safe_direct_node_test_entry_or_reports_execution_gap",
+        "does_not_install_dependencies_or_execute_build"
+      ]
+    }
+  ]
+}

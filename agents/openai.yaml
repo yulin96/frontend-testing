@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Testing"
+  short_description: "Behavior-focused Vue and Node tests with strong assertions"
+  default_prompt: "使用 $frontend-testing 为指定功能补充有价值的测试，先确认行为契约，运行针对性验证，不要为了让测试通过而降低断言强度。"
